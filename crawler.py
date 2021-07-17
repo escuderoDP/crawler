@@ -2,11 +2,12 @@ from bs4 import BeautifulSoup
 import requests
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
+import time
 
 def browser():
 	# Options and profile for selenium
 	option = Options()
-	option.headless = True
+	option.headless = False
 	user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 11.4; rv:89.0) Gecko/20100101 Firefox/89.0"
 	profile = webdriver.FirefoxProfile()
 	profile.set_preference("general.useragent.override", user_agent)
@@ -63,24 +64,35 @@ def build_payload(soup_login_page):
 
 
 def log_in(browser, start_url, login_page, payload):
-	session = requests.Session()
-	login = session.post(start_url+login_page, data=payload, allow_redirects=True)
-	browser.get(start_url+login_page)
-	get_login_page = browser.page_source
-	
+	browser.get(start_url+login_page) 
+	time.sleep(2)
+	username = browser.find_element_by_name(list(payload.keys())[0])
+	password = browser.find_element_by_name(list(payload.keys())[1])
+	username.send_keys(list(payload.values())[0])
+	password.send_keys(list(payload.values())[1])
+	login_attempt = browser.find_element_by_xpath("//*[@type='submit']")
+	login_attempt.click()
+	page_text = (browser.find_element_by_tag_name('body').text).lower() # Get a visible text in the page
+
 	#Check if the login was successful
-	key_words = ["invalid", "incorrect", "invaludo", "incorreto"]
+	key_words = ["invalid", "incorrect", "invalido", "incorreto"]
 	for key_word in key_words:
-		if key_word in get_login_page: 
+		if key_word in page_text: 
 			return False
 
-	return session.cookies.get_dict()
+	# Get cookies
+	cookies_list = browser.get_cookies()
+	cookies_dict = {}
+	for cookie in cookies_list:
+		cookies_dict[cookie['name']] = cookie['value']
+
+	return cookies_dict
 
 
 def find_all_links(browser, login, start_url, links):
 	if login is not False:
 		for cookie in login:
-			browser.add_cookie({'name': cookie, 'value': login.get(cookie)})
+			browser.add_cookie({'name': cookie, 'value': login[cookie]})
 	
 	links_to_crawl = links
 	links_not_crawl = set()
@@ -129,7 +141,7 @@ def main():
 
 	browser_default.close()
 
-	print(links)
+#	print(links)
 
 
 
