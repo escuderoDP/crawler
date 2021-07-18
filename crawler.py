@@ -7,7 +7,7 @@ import time
 def browser():
 	# Options and profile for selenium
 	option = Options()
-	option.headless = False
+	option.headless = True
 	user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 11.4; rv:89.0) Gecko/20100101 Firefox/89.0"
 	profile = webdriver.FirefoxProfile()
 	profile.set_preference("general.useragent.override", user_agent)
@@ -37,7 +37,21 @@ def find_links(soup):
 		links.append(link.get('location.assign'))
 		links.append(link.get('routerlink'))
 
-	return set(link.replace("#","") for link in links if link is not None and ".com" not in link and ".js" not in link)
+	list_to_remove = [".js",".md",".com",".br",".edu",".us",".org","#"]
+	links_discard = set()
+
+	links = set(links)
+	links.discard(None)
+
+	links = set(links)
+
+	for link in links:
+		for item in list_to_remove:
+			if link.find(item) != -1:
+				links_discard = links_discard.union(set([link]))
+
+	return links.difference(links_discard)
+
 
 
 def find_login_page(links_in_start_url):
@@ -51,21 +65,20 @@ def build_payload(soup_login_page):
 	
 	for username in usernames_key:
 		if soup_login_page.find_all('input', {'name':username}):
-			payload[username] = "bob"
+			payload[username] = "teste@teste.com"
 			break
 	
 	for password in passwords_key:
 		if soup_login_page.find_all('input', {'name':password}):
-			payload[password] = "bob"
+			payload[password] = "Teste@26"
 			break
 
 	return payload
 
 
-
 def log_in(browser, start_url, login_page, payload):
 	browser.get(start_url+login_page) 
-	time.sleep(2)
+	time.sleep(3)
 	username = browser.find_element_by_name(list(payload.keys())[0])
 	password = browser.find_element_by_name(list(payload.keys())[1])
 	username.send_keys(list(payload.values())[0])
@@ -119,9 +132,8 @@ def find_all_links(browser, login, start_url, links):
 
 
 
-
 def main():
-	start_url = "http://127.0.0.1"
+	start_url = "http://127.0.0.1:3000/#"
 	browser_default = browser()
 	page_source_start_url = get_source_code(browser_default, start_url)
 	links_in_start_url = find_links(page_source_start_url)
