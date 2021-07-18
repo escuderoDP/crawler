@@ -26,7 +26,7 @@ def get_source_code(browser, url):
 	return BeautifulSoup(html, 'html.parser')
 
 
-def find_links(soup):
+def find_links(start_url, soup):
 	links = []
 	for link in soup.find_all(["a", "script", "button", "form"]):
 		links.append(link.get('href'))
@@ -38,11 +38,20 @@ def find_links(soup):
 		links.append(link.get('location.assign'))
 		links.append(link.get('routerlink'))
 
-	list_to_remove = [".js",".md",".com",".br",".edu",".us",".org","#"]
+	list_to_remove = [".js",".md",".com",".br",".edu",".us",".org","#",".pdf",".jpg",".png"]
 	links_discard = set()
 
 	links = set(links)
 	links.discard(None)
+	new_links = []
+
+	links = list(links)
+	for link in links:
+		new_link = link.replace(start_url, "")
+		if new_link != "":
+			new_links.append(new_link)
+
+	links = set(new_links)
 
 	for link in links:
 		for item in list_to_remove:
@@ -112,12 +121,15 @@ def find_all_links(browser, login, start_url, links):
 
 	while True:
 		for link in links_to_crawl:
-			links = links.union(find_links(get_source_code(browser, start_url+link)))
+			links = links.union(find_links(start_url, get_source_code(browser, start_url+link)))
 			links_to_crawl = links_to_crawl.union(links.difference(links_old))
+			links_not_crawl = links_not_crawl.union([link])
+
 		
 		for link in links_to_crawl:
 			if "?" in link: #and re.findall('(.+)\?', link)[0] in links:
 				links_not_crawl = links_not_crawl.union([link])
+
 
 		if links_old == links:
 			break
@@ -135,7 +147,7 @@ def main():
 	start_url = str(sys.argv[1])
 	browser_default = browser()
 	page_source_start_url = get_source_code(browser_default, start_url)
-	links_in_start_url = find_links(page_source_start_url)
+	links_in_start_url = find_links(start_url, page_source_start_url)
 	login_pages = find_login_page(links_in_start_url)
 	links = login_pages
 	username_arg = str(sys.argv[2])
