@@ -3,6 +3,7 @@ import requests
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 import time
+import sys
 
 def browser():
 	# Options and profile for selenium
@@ -43,8 +44,6 @@ def find_links(soup):
 	links = set(links)
 	links.discard(None)
 
-	links = set(links)
-
 	for link in links:
 		for item in list_to_remove:
 			if link.find(item) != -1:
@@ -58,19 +57,19 @@ def find_login_page(links_in_start_url):
 	return set([x for x in links_in_start_url if "login" in x])
 
 
-def build_payload(soup_login_page):
+def build_payload(soup_login_page, username_arg, password_arg):
 	usernames_key = ["username", "usuário", "user", "uname", "email", "e-mail", "adminname"]
 	passwords_key = ["password", "senha", "passwd", "pwd"]
 	payload = {}
 	
 	for username in usernames_key:
 		if soup_login_page.find_all('input', {'name':username}):
-			payload[username] = "teste@teste.com"
+			payload[username] = username_arg
 			break
 	
 	for password in passwords_key:
 		if soup_login_page.find_all('input', {'name':password}):
-			payload[password] = "Teste@26"
+			payload[password] = password_arg
 			break
 
 	return payload
@@ -133,16 +132,18 @@ def find_all_links(browser, login, start_url, links):
 
 
 def main():
-	start_url = "http://127.0.0.1:3000/#"
+	start_url = str(sys.argv[1])
 	browser_default = browser()
 	page_source_start_url = get_source_code(browser_default, start_url)
 	links_in_start_url = find_links(page_source_start_url)
 	login_pages = find_login_page(links_in_start_url)
 	links = login_pages
+	username_arg = str(sys.argv[2])
+	password_arg = str(sys.argv[3])
 
 	for login_page in login_pages:
 		page_sorce_login = get_source_code(browser_default, start_url+login_page)
-		payload = build_payload(page_sorce_login)
+		payload = build_payload(page_sorce_login, username_arg, password_arg)
 		login = log_in(browser_default, start_url, login_page, payload)
 		
 		if login == False:
@@ -153,7 +154,7 @@ def main():
 
 	browser_default.close()
 
-#	print(links)
+	print(links)
 
 
 
