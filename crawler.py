@@ -2,24 +2,23 @@ from bs4 import BeautifulSoup
 import requests
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.common.proxy import Proxy, ProxyType
 import time
 import sys
 
 def browser():
-	# Options and profile for selenium
-	option = Options()
-	option.headless = True
-	user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 11.4; rv:89.0) Gecko/20100101 Firefox/89.0"
-	profile = webdriver.FirefoxProfile()
-	profile.set_preference("general.useragent.override", user_agent)
+	# Options for selenium
+	options = Options()
+	options.headless = True
+	options.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11.4; rv:89.0) Gecko/20100101 Firefox/89.0")
 
-	return webdriver.Firefox(options=option, firefox_profile = profile)
+	return webdriver.Firefox(options = options)#, capabilities=firefox_capabilities)
 
 
 def get_source_code(browser, url):
 	# get source code
 	browser.get(url)
-#	agent = browser.execute_script("return navigator.userAgent")
+#	print(browser.execute_script("return navigator.userAgent"))
 	html = browser.page_source
 #	browser.close()
 
@@ -144,14 +143,31 @@ def find_all_links(browser, login, start_url, links):
 
 
 def main():
+	len_argv = len(sys.argv)
+	if len_argv <= 1:
+		print("You need to pass an input url. You can also pass in a valid username and password.\nAn example is running 'python3 http://url username password'.")
+		sys.exit()
+
+	if len_argv == 3:
+		print("You just filled in the username, fill in the password as well or just enter the url.\nYou can also pass in a valid username and password. An example is running 'python3 http://url username password'.")
+		sys.exit()
+
+	if len_argv == 2 or len_argv == 4 and "http" not in sys.argv[1]:
+		print("The url is invalid.")
+		sys.exit()
+
 	start_url = str(sys.argv[1])
 	browser_default = browser()
 	page_source_start_url = get_source_code(browser_default, start_url)
 	links_in_start_url = find_links(start_url, page_source_start_url)
 	login_pages = find_login_page(links_in_start_url)
 	links = login_pages
-	username_arg = str(sys.argv[2])
-	password_arg = str(sys.argv[3])
+	username_arg = "admin"
+	password_arg = "admin"
+
+	if len_argv == 4:
+		username_arg = str(sys.argv[2])
+		password_arg = str(sys.argv[3])
 
 	for login_page in login_pages:
 		page_sorce_login = get_source_code(browser_default, start_url+login_page)
