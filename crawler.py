@@ -2,7 +2,6 @@ from bs4 import BeautifulSoup
 import requests
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.common.proxy import Proxy, ProxyType
 import time
 import sys
 
@@ -55,7 +54,7 @@ def find_links(start_url, soup):
 	for link in links:
 		for item in list_to_remove:
 			if link.find(item) != -1:
-				links_discard = links_discard.union(set([link]))
+				links_discard = links_discard.union([link])
 
 	return links.difference(links_discard)
 
@@ -84,8 +83,9 @@ def build_payload(soup_login_page, username_arg, password_arg):
 
 
 def log_in(browser, start_url, login_page, payload):
-	browser.get(start_url+login_page) 
+	browser.get(start_url+login_page)
 	time.sleep(3)
+	page_sorce_login = browser.page_source
 	username = browser.find_element_by_name(list(payload.keys())[0])
 	password = browser.find_element_by_name(list(payload.keys())[1])
 	username.send_keys(list(payload.values())[0])
@@ -93,8 +93,11 @@ def log_in(browser, start_url, login_page, payload):
 	login_attempt = browser.find_element_by_xpath("//*[@type='submit']")
 	login_attempt.click()
 	page_text = (browser.find_element_by_tag_name('body').text).lower() # Get a visible text in the page
+	redirected_page_sorce_login = browser.page_source
 
 	#Check if the login was successful
+	if page_sorce_login == redirected_page_sorce_login:
+		return False
 	key_words = ["invalid", "incorrect", "invalido", "incorreto"]
 	for key_word in key_words:
 		if key_word in page_text: 
