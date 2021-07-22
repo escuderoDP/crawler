@@ -4,6 +4,7 @@ from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 import time
 import sys
+import re
 
 def browser():
 	# Options for selenium
@@ -85,7 +86,7 @@ def build_payload(soup_login_page, username_arg, password_arg):
 def log_in(browser, start_url, login_page, payload):
 	browser.get(start_url+login_page)
 	time.sleep(3)
-	page_sorce_login = browser.page_source
+	page_source_login = browser.page_source
 	username = browser.find_element_by_name(list(payload.keys())[0])
 	password = browser.find_element_by_name(list(payload.keys())[1])
 	username.send_keys(list(payload.values())[0])
@@ -93,10 +94,10 @@ def log_in(browser, start_url, login_page, payload):
 	login_attempt = browser.find_element_by_xpath("//*[@type='submit']")
 	login_attempt.click()
 	page_text = (browser.find_element_by_tag_name('body').text).lower() # Get a visible text in the page
-	redirected_page_sorce_login = browser.page_source
+	redirected_page_source_login = browser.page_source
 
 	#Check if the login was successful
-	if page_sorce_login == redirected_page_sorce_login:
+	if page_source_login == redirected_page_source_login:
 		return False
 	key_words = ["invalid", "incorrect", "invalido", "incorreto"]
 	for key_word in key_words:
@@ -109,13 +110,14 @@ def log_in(browser, start_url, login_page, payload):
 	for cookie in cookies_list:
 		cookies_dict[cookie['name']] = cookie['value']
 
-	return cookies_dict
+	return [cookies_dict, browser.current_url]
 
 
 def find_all_links(browser, login, start_url, links):
 	if login is not False:
-		for cookie in login:
-			browser.add_cookie({'name': cookie, 'value': login[cookie]})
+		cookies_dict = dict(login[0])
+		for cookie in cookies_dict:
+			browser.add_cookie({'name': cookie, 'value': cookies_dict[cookie]})
 	
 	links_to_crawl = links
 	links_not_crawl = set()
@@ -129,7 +131,7 @@ def find_all_links(browser, login, start_url, links):
 
 		
 		for link in links_to_crawl:
-			if "?" in link: #and re.findall('(.+)\?', link)[0] in links:
+			if "?" in link and bool(re.search(r'\d', link)): #and re.findall('(.+)\?', link)[0] in links:
 				links_not_crawl = links_not_crawl.union([link])
 
 
@@ -155,7 +157,7 @@ def main():
 		print("You just filled in the username, fill in the password as well or just enter the url.\nYou can also pass in a valid username and password. An example is running 'python3 http://url username password'.")
 		sys.exit()
 
-	if len_argv == 2 or len_argv == 4 and "http" not in sys.argv[1]:
+	if (len_argv == 2 or len_argv == 4) and "http" not in sys.argv[1]:
 		print("The url is invalid.")
 		sys.exit()
 
@@ -178,8 +180,10 @@ def main():
 		login = log_in(browser_default, start_url, login_page, payload)
 		
 		if login == False:
-			print("The username/password combination you have entered is invalid for "+start_url+login_page,
-				"or the site doens't have a login page. \n")
+			print("The username/password combination you have entered is invalid for "+start_url+login_page,"\n")
+
+		else:
+			links = links.union(set([login[1].replace(start_url, "")]))
 
 		links = links.union(find_all_links(browser_default, login, start_url, links))
 
