@@ -1,11 +1,11 @@
 from bs4 import BeautifulSoup
-import requests
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
-import time
+from time import sleep
+from os import system
+import requests
 import sys
 import re
-import os
 
 def browser():
 	# Options for selenium
@@ -130,6 +130,21 @@ def login_wordlist(browser, start_url, login_page, payload):
 	return False
 
 
+def check_login_wordlist(browser, start_url, login_page, payload):
+	system('cls||clear')
+	print("Trying to find a valid username and password combination...\n")
+	logged_wordlist = login_wordlist(browser, start_url, login_page, payload)
+
+	if logged_wordlist is not False:
+		print("The username and password ",logged_wordlist," is valid in the page ",start_url+login_page,
+			". The web system is vulnerable.\n")
+		return logged_wordlist
+
+	print("Not found a valid username and password combination!\n")
+
+	return ["", ""]
+
+
 def find_all_links(browser, login, start_url, links):
 	if login is not False:
 		cookies_dict = dict(login[0])
@@ -196,27 +211,21 @@ def main():
 		page_sorce_login = get_source_code(browser_default, start_url+login_page)
 		payload = build_payload(page_sorce_login, username_arg, password_arg)
 		
-		if len_argv == 2:
-			os.system('cls' if os.name == 'nt' else 'clear')
-			choose_wordlist = input("Do you want to try a wordlist of usernames and passwords for the page "+start_url+login_page+
-				"? This may take a while. 'y' for yes and 'n' for no.\n\n")
-			if choose_wordlist == "y":
-				os.system('cls' if os.name == 'nt' else 'clear')
-				print("Trying to find a valid username and password combination...\n")
-				logged_wordlist = login_wordlist(browser_default, start_url, login_page, payload)
-				if logged_wordlist is not False:
-					print("The username and password ",logged_wordlist," is valid in the page ",start_url+login_page,
-						". The web system is vulnerable.\n")
-					username_arg = logged_wordlist[0]
-					password_arg = logged_wordlist[1]
-
-				elif logged_wordlist == False:
-					print("Not found a valid username and password combination!\n")
-
 		login = log_in(browser_default, start_url, login_page, payload)
+
+		if len_argv == 2 or login == False:
+			choose_wordlist = input("Do you want to try a wordlist of usernames and passwords for the page "+start_url+login_page+
+				"? This may take a few minutes. 'y' for yes and 'n' for no.\n\n")
+			if choose_wordlist == "y":
+				logged_wordlist = check_login_wordlist(browser_default, start_url, login_page, payload)
+				username_arg = logged_wordlist[0]
+				password_arg = logged_wordlist[1]
+
+				if username_arg != "":
+					login = log_in(browser_default, start_url, login_page, payload)
 		
 		if login == False:
-			print("The username/password combination you have entered is invalid for "+start_url+login_page,"\n")
+			print("\nThe username/password combination is invalid for "+start_url+login_page,"\n\n")
 
 		else:
 			links = links.union(set([login[1].replace(start_url, "")]))
