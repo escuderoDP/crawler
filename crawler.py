@@ -85,7 +85,7 @@ def build_payload(soup_login_page, username_arg, password_arg):
 
 def log_in(browser, start_url, login_page, payload):
 	browser.get(start_url+login_page)
-	time.sleep(3)
+	#time.sleep(3)
 	page_source_login = browser.page_source
 	username = browser.find_element_by_name(list(payload.keys())[0])
 	password = browser.find_element_by_name(list(payload.keys())[1])
@@ -111,6 +111,22 @@ def log_in(browser, start_url, login_page, payload):
 		cookies_dict[cookie['name']] = cookie['value']
 
 	return [cookies_dict, browser.current_url]
+
+
+def login_wordlist(browser, start_url, login_page, payload):
+	for line in open("wordlist","r").readlines():
+		line = line.strip()
+		loginInfo = line.split(",")
+
+		for n,input_dict in enumerate(payload):
+			payload[input_dict] = loginInfo[n]
+
+		login = log_in(browser, start_url, login_page, payload)
+		
+		if login is not False:
+			return loginInfo
+
+	return False
 
 
 def find_all_links(browser, login, start_url, links):
@@ -149,7 +165,7 @@ def find_all_links(browser, login, start_url, links):
 
 def main():
 	len_argv = len(sys.argv)
-	if len_argv <= 1:
+	if len_argv <= 1 or sys.argv[1]=="help":
 		print("You need to pass an input url. You can also pass in a valid username and password.\nAn example is running 'python3 http://url username password'.")
 		sys.exit()
 
@@ -167,8 +183,9 @@ def main():
 	links_in_start_url = find_links(start_url, page_source_start_url)
 	login_pages = find_login_page(links_in_start_url)
 	links = login_pages
-	username_arg = "admin"
-	password_arg = "admin"
+
+	username_arg = ""
+	password_arg = ""
 
 	if len_argv == 4:
 		username_arg = str(sys.argv[2])
@@ -177,6 +194,19 @@ def main():
 	for login_page in login_pages:
 		page_sorce_login = get_source_code(browser_default, start_url+login_page)
 		payload = build_payload(page_sorce_login, username_arg, password_arg)
+		
+		if len_argv == 2:
+			choose_wordlist = input("Do you want to try a wordlist of usernames and passwords for the page "+start_url+login_page+
+				"? This may take a while. 'y' for yes and 'n' for no.\n")
+			if choose_wordlist == "y":
+				print("Trying to find a valid username and password combination...\n")
+				logged_wordlist = login_wordlist(browser_default, start_url, login_page, payload)
+				if logged_wordlist is not False:
+					print("The username and password ",logged_wordlist," is valid in the page ",start_url+login_page,
+						". The web system is vulnerable.\n")
+					username_arg = logged_wordlist[0]
+					password_arg = logged_wordlist[1]
+
 		login = log_in(browser_default, start_url, login_page, payload)
 		
 		if login == False:
