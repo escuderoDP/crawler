@@ -5,6 +5,7 @@ from selenium.webdriver.firefox.options import Options
 import time
 import sys
 import re
+import os
 
 def browser():
 	# Options for selenium
@@ -196,9 +197,11 @@ def main():
 		payload = build_payload(page_sorce_login, username_arg, password_arg)
 		
 		if len_argv == 2:
+			os.system('cls' if os.name == 'nt' else 'clear')
 			choose_wordlist = input("Do you want to try a wordlist of usernames and passwords for the page "+start_url+login_page+
-				"? This may take a while. 'y' for yes and 'n' for no.\n")
+				"? This may take a while. 'y' for yes and 'n' for no.\n\n")
 			if choose_wordlist == "y":
+				os.system('cls' if os.name == 'nt' else 'clear')
 				print("Trying to find a valid username and password combination...\n")
 				logged_wordlist = login_wordlist(browser_default, start_url, login_page, payload)
 				if logged_wordlist is not False:
@@ -206,6 +209,9 @@ def main():
 						". The web system is vulnerable.\n")
 					username_arg = logged_wordlist[0]
 					password_arg = logged_wordlist[1]
+
+				elif logged_wordlist == False:
+					print("Not found a valid username and password combination!\n")
 
 		login = log_in(browser_default, start_url, login_page, payload)
 		
@@ -220,7 +226,6 @@ def main():
 	browser_default.close()
 
 	print(links)
-
 
 
 if __name__ == "__main__":
