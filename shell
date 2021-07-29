@@ -1,0 +1,9 @@
+#!/bin/bash
+sudo apt update
+sudo apt-get install firefox-geckodriver
+
+# You need of the Firefox Browser
+sudo apt install firefox
+
+# Install libraries
+pip install -r required_libraries
