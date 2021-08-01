@@ -203,11 +203,11 @@ def main():
 	username_arg = ""
 	password_arg = ""
 
-	if len_argv == 4:
-		username_arg = str(sys.argv[2])
-		password_arg = str(sys.argv[3])
-
 	for login_page in login_pages:
+		if len_argv == 4:
+			username_arg = str(sys.argv[2])
+			password_arg = str(sys.argv[3])
+			
 		page_sorce_login = get_source_code(browser_default, start_url+login_page)
 		payload = build_payload(page_sorce_login, username_arg, password_arg)
 		
