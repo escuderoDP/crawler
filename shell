@@ -1,9 +1,12 @@
 #!/bin/bash
 sudo apt update
-sudo apt-get install firefox-geckodriver
+
+sudo apt install python3
 
 # You need of the Firefox Browser
 sudo apt install firefox
+
+cp geckodriver /usr/bin
 
 # Install libraries
 pip install -r required_libraries
