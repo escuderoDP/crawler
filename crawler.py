@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
+from selenium.common.exceptions import NoSuchElementException
 from time import sleep
 from os import system
 import requests
@@ -157,15 +158,31 @@ def find_all_links(browser, login, start_url, links):
 
 	while True:
 		for link in links_to_crawl:
-			links = links.union(find_links(start_url, get_source_code(browser, start_url+link)))
+			soup_page = get_source_code(browser, start_url+link)
+			links = links.union(find_links(start_url, soup_page))
 			links_to_crawl = links_to_crawl.union(links.difference(links_old))
 			links_not_crawl = links_not_crawl.union([link])
 
+			intputs_text = browser.find_elements_by_xpath("//input[@type='text']")
+			for input_text in intputs_text:
+				input_text.send_keys("default")
+			
+			try:
+				browser.find_element_by_xpath("//*[@type='submit']").click()
+			except NoSuchElementException:  #spelling error making this code not work as expected
+				try:
+					browser.find_element_by_xpath(".//*/form/input[2]").click()
+				except NoSuchElementException:
+					pass
+
+			current_url = browser.current_url.replace(start_url, "")
+			if current_url not in links:
+				links_to_crawl = links_to_crawl.union([current_url])
+				links = links.union([current_url])
 		
 		for link in links_to_crawl:
 			if "?" in link and bool(re.search(r'\d', link)): #and re.findall('(.+)\?', link)[0] in links:
 				links_not_crawl = links_not_crawl.union([link])
-
 
 		if links_old == links:
 			break
@@ -214,8 +231,8 @@ def main():
 		login = log_in(browser_default, start_url, login_page, payload)
 
 		if len_argv == 2 or login == False:
-			choose_wordlist = input("Do you want to try a wordlist of usernames and passwords for the page "+start_url+login_page+
-				"? This may take a few minutes. 'y' for yes and 'n' for no.\n\n")
+			choose_wordlist = input("\nDo you want to try a wordlist for the page "+start_url+login_page+
+				"? This may take a few minutes.\n 'y' or 'n'.\n\n")
 			if choose_wordlist == "y":
 				logged_wordlist = check_login_wordlist(browser_default, start_url, login_page, payload)
 				username_arg = logged_wordlist[0]
