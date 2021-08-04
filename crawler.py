@@ -11,7 +11,7 @@ import re
 def browser():
 	# Options for selenium
 	options = Options()
-	options.headless = True
+	options.headless = False
 	options.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11.4; rv:89.0) Gecko/20100101 Firefox/89.0")
 
 	return webdriver.Firefox(options = options)#, capabilities=firefox_capabilities)
@@ -158,39 +158,53 @@ def find_all_links(browser, login, start_url, links):
 
 	while True:
 		for link in links_to_crawl:
-			soup_page = get_source_code(browser, start_url+link)
-			links = links.union(find_links(start_url, soup_page))
-			links_to_crawl = links_to_crawl.union(links.difference(links_old))
-			links_not_crawl = links_not_crawl.union([link])
-
-			intputs_text = browser.find_elements_by_xpath("//input[@type='text']")
-			for input_text in intputs_text:
-				input_text.send_keys("default")
-			
 			try:
-				browser.find_element_by_xpath("//*[@type='submit']").click()
-			except NoSuchElementException:  #spelling error making this code not work as expected
+				soup_page = get_source_code(browser, start_url+link)
+				links = links.union(find_links(start_url, soup_page))
+				links_to_crawl = links_to_crawl.union(links.difference(links_old))
+				links_not_crawl = links_not_crawl.union([link])
+
 				try:
-					browser.find_element_by_xpath(".//*/form/input[2]").click()
+					intputs_text = browser.find_elements_by_xpath("//input[@type='text']")
+					for input_text in intputs_text:
+						input_text.send_keys("default")
 				except NoSuchElementException:
 					pass
 
-			current_url = browser.current_url.replace(start_url, "")
-			if current_url not in links:
-				links_to_crawl = links_to_crawl.union([current_url])
-				links = links.union([current_url])
+				try:
+					intputs_text = browser.find_elements_by_xpath("//textarea[*]")
+					for input_text in intputs_text:
+						input_text.send_keys("default")
+				except NoSuchElementException:
+					pass
+				
+				try:
+					browser.find_element_by_xpath("//*[@type='submit']").click()
+				except NoSuchElementException:  #spelling error making this code not work as expected
+					try:
+						browser.find_element_by_xpath(".//*/form/input[2]").click()
+					except NoSuchElementException:
+						pass
+
+				current_url = browser.current_url.replace(start_url, "")
+				if current_url not in links:
+					links_to_crawl = links_to_crawl.union([current_url])
+					links = links.union([current_url])
+
+			except:
+				pass
 		
 		for link in links_to_crawl:
-			if "?" in link and bool(re.search(r'\d', link)): #and re.findall('(.+)\?', link)[0] in links:
+			if "?" in link and bool(re.search(r'\d', link)): #re.findall('(.+)\?', link)[0] in links:
 				links_not_crawl = links_not_crawl.union([link])
+
+		links_to_crawl = links_to_crawl.difference(links_not_crawl)
+		links_not_crawl = set()
 
 		if links_old == links:
 			break
 
-		links_to_crawl = links_to_crawl.difference(links_not_crawl)
-
 		links_old = links
-		links_not_crawl = set()
 		 
 	return links		
 
