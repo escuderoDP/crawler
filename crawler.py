@@ -11,7 +11,7 @@ import re
 def browser():
 	# Options for selenium
 	options = Options()
-	options.headless = False
+	options.headless = True
 	options.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11.4; rv:89.0) Gecko/20100101 Firefox/89.0")
 
 	return webdriver.Firefox(options = options)#, capabilities=firefox_capabilities)
@@ -245,15 +245,12 @@ def main():
 		login = log_in(browser_default, start_url, login_page, payload)
 
 		if len_argv == 2 or login == False:
-			choose_wordlist = input("\nDo you want to try a wordlist for the page "+start_url+login_page+
-				"? This may take a few minutes.\n 'y' or 'n'.\n\n")
-			if choose_wordlist == "y":
-				logged_wordlist = check_login_wordlist(browser_default, start_url, login_page, payload)
-				username_arg = logged_wordlist[0]
-				password_arg = logged_wordlist[1]
+			logged_wordlist = check_login_wordlist(browser_default, start_url, login_page, payload)
+			username_arg = logged_wordlist[0]
+			password_arg = logged_wordlist[1]
 
-				if username_arg != "":
-					login = log_in(browser_default, start_url, login_page, payload)
+			if username_arg != "":
+				login = log_in(browser_default, start_url, login_page, payload)
 		
 		if login == False:
 			print("\nThe username/password combination is invalid for "+start_url+login_page,"\n\n")
