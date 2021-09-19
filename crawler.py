@@ -225,6 +225,8 @@ def main():
 		sys.exit()
 
 	start_url = str(sys.argv[1])
+	if start_url[len(start_url)-1] != "/":
+		start_url = start_url+"/"
 	browser_default = browser()
 	page_source_start_url = get_source_code(browser_default, start_url)
 	links_in_start_url = find_links(start_url, page_source_start_url)
@@ -234,31 +236,35 @@ def main():
 	username_arg = ""
 	password_arg = ""
 
-	for login_page in login_pages:
-		if len_argv == 4:
-			username_arg = str(sys.argv[2])
-			password_arg = str(sys.argv[3])
+	if login_pages != set():
+		for login_page in login_pages:
+			if len_argv == 4:
+				username_arg = str(sys.argv[2])
+				password_arg = str(sys.argv[3])
+				
+			page_sorce_login = get_source_code(browser_default, start_url+login_page)
+			payload = build_payload(page_sorce_login, username_arg, password_arg)
 			
-		page_sorce_login = get_source_code(browser_default, start_url+login_page)
-		payload = build_payload(page_sorce_login, username_arg, password_arg)
-		
-		login = log_in(browser_default, start_url, login_page, payload)
+			login = log_in(browser_default, start_url, login_page, payload)
 
-		if len_argv == 2 or login == False:
-			logged_wordlist = check_login_wordlist(browser_default, start_url, login_page, payload)
-			username_arg = logged_wordlist[0]
-			password_arg = logged_wordlist[1]
+			if len_argv == 2 or login == False:
+				logged_wordlist = check_login_wordlist(browser_default, start_url, login_page, payload)
+				username_arg = logged_wordlist[0]
+				password_arg = logged_wordlist[1]
 
-			if username_arg != "":
-				login = log_in(browser_default, start_url, login_page, payload)
-		
-		if login == False:
-			print("\nThe username/password combination is invalid for "+start_url+login_page,"\n\n")
+				if username_arg != "":
+					login = log_in(browser_default, start_url, login_page, payload)
+			
+			if login == False:
+				print("\nThe username/password combination is invalid for "+start_url+login_page,"\n\n")
 
-		else:
-			links = links.union(set([login[1].replace(start_url, "")]))
+			else:
+				links = links.union(set([login[1].replace(start_url, "")]))
 
-		links = links.union(find_all_links(browser_default, login, start_url, links))
+			links = links.union(find_all_links(browser_default, login, start_url, links))
+
+	else:
+		links = links.union(find_all_links(browser_default, False, start_url, links))
 
 	browser_default.close()
 
